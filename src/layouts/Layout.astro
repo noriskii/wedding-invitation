@@ -1,23 +1,160 @@
+---
+interface Props {
+	title?: string;
+	primaryColor?: string;
+	secondaryColor?: string;
+	accentColor?: string;
+}
+
+const {
+	title = "Invitation",
+	primaryColor = "#84BC9C",
+	secondaryColor = "#2A4235",
+	accentColor = "#FFFDF7",
+} = Astro.props;
+---
+
 <!doctype html>
-<html lang="en">
+<html lang='pt-BR'>
 	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro Basics</title>
+		<meta charset='UTF-8' />
+		<meta name='viewport' content='width=device-width, initial-scale=1.0' />
+		<meta name='generator' content={Astro.generator} />
+		<link rel='stylesheet' href='/src/styles/global.css' />
+		<title>{title}</title>
+		<style define:vars={{ primaryColor, secondaryColor, accentColor }}>
+			.gradient-1 {
+				background: var(--primaryColor);
+			}
+			.gradient-2 {
+				background: var(--secondaryColor);
+			}
+			.gradient-3 {
+				background: var(--accentColor);
+			}
+
+			@keyframes float {
+				0%,
+				100% {
+					transform: translate(0, 0) scale(1);
+				}
+				25% {
+					transform: translate(5%, 10%) scale(1.1);
+				}
+				50% {
+					transform: translate(-5%, 5%) scale(0.95);
+				}
+				75% {
+					transform: translate(10%, -5%) scale(1.05);
+				}
+			}
+
+			.animate-float {
+				animation: float 15s ease-in-out infinite;
+			}
+			.animate-float-delay-1 {
+				animation-delay: -5s;
+			}
+			.animate-float-delay-2 {
+				animation-delay: -10s;
+			}
+		</style>
+		<style is:global>
+			@keyframes fall {
+				0% {
+					transform: translateY(-10px) rotate(0deg);
+				}
+				100% {
+					transform: translateY(110vh) rotate(720deg);
+				}
+			}
+
+			@keyframes twinkle {
+				0% {
+					opacity: 0.4;
+				}
+				100% {
+					opacity: 1;
+				}
+			}
+
+			.glitter {
+				position: absolute;
+				top: -10px;
+				background: linear-gradient(135deg, #ffd700, #ffec8b);
+				border-radius: 50%;
+				box-shadow:
+					0 0 6px 2px rgba(255, 215, 0, 0.8),
+					0 0 12px 4px rgba(255, 215, 0, 0.4);
+			}
+		</style>
 	</head>
-	<body>
-		<slot />
+	<body
+		class='min-h-screen overflow-x-hidden bg-white text-[#0a0a0f] font-sans'
+	>
+		<!-- Background -->
+		<div class='fixed inset-0 z-0 overflow-hidden'>
+			<!-- Gradients -->
+			<div
+				class='gradient-1 absolute w-[40vw] h-[40vw] rounded-full blur-[80px] opacity-60 -top-[10%] -left-[10%] animate-float'
+			>
+			</div>
+			<div
+				class='gradient-2 absolute w-[35vw] h-[35vw] rounded-full blur-[80px] opacity-60 -bottom-[10%] -right-[10%] animate-float animate-float-delay-1'
+			>
+			</div>
+			<div
+				class='gradient-3 absolute w-[30vw] h-[30vw] rounded-full blur-[80px] opacity-60 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-float animate-float-delay-2'
+			>
+			</div>
+
+			<!-- Glitter container -->
+			<div id='glitter-container' class='absolute inset-0 pointer-events-none'>
+			</div>
+		</div>
+
+		<!-- Content -->
+		<main class='relative z-10 min-h-screen'>
+			<slot />
+		</main>
+
+		<script>
+			function createGlitter() {
+				const container = document.getElementById("glitter-container");
+				if (!container) return;
+
+				const glitter = document.createElement("div");
+				glitter.className = "glitter";
+
+				const size = Math.random() * 2 + 1; // 1 a 3 px
+				const left = Math.random() * 100;
+				const duration = Math.random() * 3 + 4;
+				const delay = Math.random() * 2;
+
+				glitter.style.cssText = `
+          width: ${size}px;
+          height: ${size}px;
+          left: ${left}%;
+          animation: fall ${duration}s linear ${delay}s infinite, twinkle 0.5s ease-in-out ${delay}s infinite alternate;
+        `;
+
+				container.appendChild(glitter);
+
+				setTimeout(
+					() => {
+						glitter.remove();
+					},
+					(duration + delay) * 1000,
+				);
+			}
+
+			// Cria glitters iniciais
+			for (let i = 0; i < 50; i++) {
+				setTimeout(createGlitter, i * 100);
+			}
+
+			// Continua criando glitters infinitamente
+			setInterval(createGlitter, 150);
+		</script>
 	</body>
 </html>
-
-<style>
-	html,
-	body {
-		margin: 0;
-		width: 100%;
-		height: 100%;
-	}
-</style>
