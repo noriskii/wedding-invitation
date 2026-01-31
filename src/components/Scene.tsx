@@ -21,6 +21,7 @@ const ANIMATION_CONFIG = {
 	close: {
 		card: {
 			y: 0,
+			scale: 1,
 			duration: 0.3,
 			ease: "power2.in",
 		},
@@ -32,18 +33,19 @@ const ANIMATION_CONFIG = {
 		},
 	},
 	extract: {
-		// Animação para tirar o card do envelope
+		// Animação para tirar o card do envelope e centralizar na tela
 		card: {
-			y: -400,
-			scale: 1.1,
-			duration: 0.8,
-			ease: "power2.out",
+			y: 0, // Centralizado verticalmente
+			scale: 1.3,
+			duration: 1,
+			ease: "power2.inOut",
 		},
 		envelope: {
-			opacity: 0.3,
-			scale: 0.9,
-			duration: 0.5,
-			ease: "power2.out",
+			opacity: 0,
+			scale: 0.8,
+			y: 100,
+			duration: 0.6,
+			ease: "power2.in",
 		},
 	},
 	intro: {
@@ -61,7 +63,8 @@ interface SceneProps {
 
 export default function Scene({ envelope = {}, card = {} }: SceneProps) {
 	const envelopeRef = useRef<EnvelopeRef>(null);
-	const cardRef = useRef<HTMLDivElement>(null);
+	const cardRef = useRef<HTMLDivElement>(null); // Card dentro do envelope
+	const extractedCardRef = useRef<HTMLDivElement>(null); // Card extraído (independente)
 	const [state, setState] = useState<"closed" | "open" | "extracted">("closed");
 
 	const openEnvelope = () => {
@@ -104,6 +107,7 @@ export default function Scene({ envelope = {}, card = {} }: SceneProps) {
 	const closeEnvelope = () => {
 		const envelope = envelopeRef.current;
 		const cardEl = cardRef.current;
+		const extractedCardEl = extractedCardRef.current;
 		if (state === "closed" || !envelope?.flap || !cardEl) return;
 
 		const tl = gsap.timeline({
@@ -112,9 +116,47 @@ export default function Scene({ envelope = {}, card = {} }: SceneProps) {
 
 		const { card: cardAnim, flap } = ANIMATION_CONFIG.close;
 
-		// Abaixa o card
+		// Se estava extraído, precisamos reverter tudo
+		if (state === "extracted" && envelope.container && extractedCardEl) {
+			// Esconde o card extraído
+			tl.to(extractedCardEl, {
+				opacity: 0,
+				y: -75,
+				scale: 1,
+				duration: 0.3,
+				ease: "power2.in",
+			});
+
+			// Mostra o envelope novamente
+			tl.to(
+				envelope.container,
+				{
+					opacity: 1,
+					scale: 1,
+					y: 0,
+					duration: 0.4,
+					ease: "power2.out",
+				},
+				0.1
+			);
+
+			// Mostra o card original novamente
+			tl.to(
+				cardEl,
+				{
+					opacity: 1,
+					y: -75, // Posição "open"
+					duration: 0.3,
+					ease: "power2.out",
+				},
+				0.2
+			);
+		}
+
+		// Abaixa o card para posição fechada
 		tl.to(cardEl, {
 			y: cardAnim.y,
+			scale: cardAnim.scale,
 			duration: cardAnim.duration,
 			ease: cardAnim.ease,
 		});
@@ -126,22 +168,10 @@ export default function Scene({ envelope = {}, card = {} }: SceneProps) {
 				rotateX: flap.rotateX,
 				duration: flap.duration,
 				ease: flap.ease,
+				zIndex: 10,
 			},
 			flap.offset
 		);
-
-		// Reset do envelope se estava extraído
-		if (state === "extracted" && envelope.container) {
-			tl.to(
-				envelope.container,
-				{
-					opacity: 1,
-					scale: 1,
-					duration: 0.3,
-				},
-				0
-			);
-		}
 
 		return tl;
 	};
@@ -149,7 +179,9 @@ export default function Scene({ envelope = {}, card = {} }: SceneProps) {
 	const extractCard = () => {
 		const envelope = envelopeRef.current;
 		const cardEl = cardRef.current;
-		if (state !== "open" || !envelope?.container || !cardEl) return;
+		const extractedCardEl = extractedCardRef.current;
+		if (state !== "open" || !envelope?.container || !cardEl || !extractedCardEl)
+			return;
 
 		const tl = gsap.timeline({
 			onComplete: () => setState("extracted"),
@@ -157,24 +189,43 @@ export default function Scene({ envelope = {}, card = {} }: SceneProps) {
 
 		const { card: cardAnim, envelope: envAnim } = ANIMATION_CONFIG.extract;
 
-		// Tira o card do envelope
+		// Card original sobe mais e some junto com o envelope
 		tl.to(cardEl, {
-			y: cardAnim.y,
-			scale: cardAnim.scale,
-			duration: cardAnim.duration,
-			ease: cardAnim.ease,
+			y: -200,
+			opacity: 0,
+			duration: 0.4,
+			ease: "power2.in",
 		});
 
-		// Diminui o envelope
+		// Envelope some
 		tl.to(
 			envelope.container,
 			{
 				opacity: envAnim.opacity,
 				scale: envAnim.scale,
+				y: envAnim.y,
 				duration: envAnim.duration,
 				ease: envAnim.ease,
 			},
-			"-=0.5"
+			0
+		);
+
+		// Card extraído aparece (começa invisível na posição do card original)
+		tl.fromTo(
+			extractedCardEl,
+			{
+				opacity: 0,
+				scale: 1,
+				y: -75, // Mesma posição que o card quando está "open"
+			},
+			{
+				opacity: 1,
+				scale: cardAnim.scale,
+				y: cardAnim.y,
+				duration: cardAnim.duration,
+				ease: cardAnim.ease,
+			},
+			0.2 // Pequeno delay para sincronizar com o desaparecimento
 		);
 
 		return tl;
@@ -214,12 +265,37 @@ export default function Scene({ envelope = {}, card = {} }: SceneProps) {
 		return tl;
 	};
 
+	// Dimensões padrão do envelope para posicionar o card
+	const envelopeWidth = envelope.width ?? 480;
+	const envelopeHeight = envelope.height ?? 620;
+	const contentPadding = envelope.contentPadding ?? 16;
+
+	// Dimensões do card (baseadas no slot interno do envelope)
+	const cardWidth = card.width ?? envelopeWidth - contentPadding * 2;
+	const cardHeight = card.height ?? envelopeHeight - contentPadding * 2 - 16;
+
 	return (
-		<div className="min-h-screen flex items-center justify-center">
-			<div className="envelope-container">
+		<div className="min-h-screen flex items-center justify-center overflow-hidden">
+			{/* Envelope com Card dentro */}
+			<div className="envelope-container" style={{ zIndex: 10 }}>
 				<Envelope ref={envelopeRef} {...envelope} onClick={handleClick}>
 					<Card ref={cardRef} {...card} />
 				</Envelope>
+			</div>
+
+			{/* Card extraído (independente, começa invisível) */}
+			<div
+				ref={extractedCardRef}
+				className="absolute pointer-events-none"
+				style={{
+					opacity: 0,
+					zIndex: 50,
+					pointerEvents: state === "extracted" ? "auto" : "none",
+					cursor: state === "extracted" ? "pointer" : "default",
+				}}
+				onClick={state === "extracted" ? handleClick : undefined}
+			>
+				<Card {...card} width={cardWidth} height={cardHeight} />
 			</div>
 		</div>
 	);
