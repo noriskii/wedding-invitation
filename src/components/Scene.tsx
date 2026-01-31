@@ -1,7 +1,15 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Envelope, { type EnvelopeRef, type EnvelopeProps } from "./Envelope";
 import Card, { type CardProps } from "./Card";
+import OpenableCard, {
+	type OpenableCardRef,
+	type OpenableCardProps,
+} from "./OpenableCard";
+
+// Registrar o plugin ScrollTrigger
+gsap.registerPlugin(ScrollTrigger);
 
 // Configurações de animação
 const ANIMATION_CONFIG = {
@@ -48,6 +56,15 @@ const ANIMATION_CONFIG = {
 			ease: "power2.in",
 		},
 	},
+	openCard: {
+		// Animação para abrir o card em abas (80% = ~144 graus)
+		flaps: {
+			angle: 144, // 80% de 180 graus
+			duration: 1.2,
+			ease: "power2.out",
+			stagger: 0.1, // Pequeno delay entre as abas
+		},
+	},
 	intro: {
 		duration: 0.8,
 		ease: "back.out(1.7)",
@@ -59,13 +76,22 @@ const ANIMATION_CONFIG = {
 interface SceneProps {
 	envelope?: Omit<EnvelopeProps, "onClick" | "children">;
 	card?: CardProps;
+	openableCard?: OpenableCardProps;
 }
 
-export default function Scene({ envelope = {}, card = {} }: SceneProps) {
+export default function Scene({
+	envelope = {},
+	card = {},
+	openableCard = {},
+}: SceneProps) {
 	const envelopeRef = useRef<EnvelopeRef>(null);
+	const envelopeContainerRef = useRef<HTMLDivElement>(null); // Container do envelope
 	const cardRef = useRef<HTMLDivElement>(null); // Card dentro do envelope
-	const extractedCardRef = useRef<HTMLDivElement>(null); // Card extraído (independente)
-	const [state, setState] = useState<"closed" | "open" | "extracted">("closed");
+	const openableCardContainerRef = useRef<HTMLDivElement>(null); // Container do OpenableCard
+	const openableCardRef = useRef<OpenableCardRef>(null); // Card que abre em abas
+	const [state, setState] = useState<
+		"closed" | "open" | "extracted" | "cardOpen"
+	>("closed");
 
 	const openEnvelope = () => {
 		const envelope = envelopeRef.current;
@@ -107,7 +133,8 @@ export default function Scene({ envelope = {}, card = {} }: SceneProps) {
 	const closeEnvelope = () => {
 		const envelope = envelopeRef.current;
 		const cardEl = cardRef.current;
-		const extractedCardEl = extractedCardRef.current;
+		const envelopeContainer = envelopeContainerRef.current;
+		const openableCardContainer = openableCardContainerRef.current;
 		if (state === "closed" || !envelope?.flap || !cardEl) return;
 
 		const tl = gsap.timeline({
@@ -117,9 +144,9 @@ export default function Scene({ envelope = {}, card = {} }: SceneProps) {
 		const { card: cardAnim, flap } = ANIMATION_CONFIG.close;
 
 		// Se estava extraído, precisamos reverter tudo
-		if (state === "extracted" && envelope.container && extractedCardEl) {
+		if (state === "extracted" && envelopeContainer && openableCardContainer) {
 			// Esconde o card extraído
-			tl.to(extractedCardEl, {
+			tl.to(openableCardContainer, {
 				opacity: 0,
 				y: -75,
 				scale: 1,
@@ -129,7 +156,7 @@ export default function Scene({ envelope = {}, card = {} }: SceneProps) {
 
 			// Mostra o envelope novamente
 			tl.to(
-				envelope.container,
+				envelopeContainer,
 				{
 					opacity: 1,
 					scale: 1,
@@ -179,8 +206,15 @@ export default function Scene({ envelope = {}, card = {} }: SceneProps) {
 	const extractCard = () => {
 		const envelope = envelopeRef.current;
 		const cardEl = cardRef.current;
-		const extractedCardEl = extractedCardRef.current;
-		if (state !== "open" || !envelope?.container || !cardEl || !extractedCardEl)
+		const envelopeContainer = envelopeContainerRef.current;
+		const openableCardContainer = openableCardContainerRef.current;
+		if (
+			state !== "open" ||
+			!envelope?.container ||
+			!cardEl ||
+			!envelopeContainer ||
+			!openableCardContainer
+		)
 			return;
 
 		const tl = gsap.timeline({
@@ -197,9 +231,9 @@ export default function Scene({ envelope = {}, card = {} }: SceneProps) {
 			ease: "power2.in",
 		});
 
-		// Envelope some
+		// Envelope container some
 		tl.to(
-			envelope.container,
+			envelopeContainer,
 			{
 				opacity: envAnim.opacity,
 				scale: envAnim.scale,
@@ -210,13 +244,18 @@ export default function Scene({ envelope = {}, card = {} }: SceneProps) {
 			0
 		);
 
-		// Card extraído aparece (começa invisível na posição do card original)
+		// OpenableCard aparece
+		tl.set(openableCardContainer, {
+			zIndex: 50,
+			pointerEvents: "auto",
+		});
+
 		tl.fromTo(
-			extractedCardEl,
+			openableCardContainer,
 			{
 				opacity: 0,
 				scale: 1,
-				y: -75, // Mesma posição que o card quando está "open"
+				y: -75,
 			},
 			{
 				opacity: 1,
@@ -225,11 +264,59 @@ export default function Scene({ envelope = {}, card = {} }: SceneProps) {
 				duration: cardAnim.duration,
 				ease: cardAnim.ease,
 			},
-			0.2 // Pequeno delay para sincronizar com o desaparecimento
+			0.2
 		);
 
 		return tl;
 	};
+
+	// Configurar parallax para abertura do card quando extraído
+	useEffect(() => {
+		if (state !== "extracted") return;
+
+		const openableCardEl = openableCardRef.current;
+		const scrollContainer = document.querySelector(".scroll-container");
+		if (!openableCardEl?.leftFlap || !openableCardEl?.rightFlap || !scrollContainer)
+			return;
+
+		const { flaps } = ANIMATION_CONFIG.openCard;
+
+		// Criar timeline para o parallax
+		const tl = gsap.timeline({
+			scrollTrigger: {
+				trigger: scrollContainer,
+				start: "top top",
+				end: "bottom bottom",
+				scrub: 0.5, // Suaviza a animação com o scroll
+			},
+		});
+
+		// Animação das abas vinculada ao scroll
+		// Aba esquerda: rotação negativa para abrir para a esquerda (origin: left center)
+		tl.to(
+			openableCardEl.leftFlap,
+			{
+				rotateY: -flaps.angle,
+				ease: "none",
+			},
+			0
+		);
+
+		// Aba direita: rotação positiva para abrir para a direita (origin: right center)
+		tl.to(
+			openableCardEl.rightFlap,
+			{
+				rotateY: flaps.angle,
+				ease: "none",
+			},
+			0
+		);
+
+		// Cleanup
+		return () => {
+			ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+		};
+	}, [state]);
 
 	const handleClick = () => {
 		switch (state) {
@@ -239,9 +326,7 @@ export default function Scene({ envelope = {}, card = {} }: SceneProps) {
 			case "open":
 				extractCard();
 				break;
-			case "extracted":
-				closeEnvelope();
-				break;
+			// Não há mais click para abrir/fechar o card - é controlado pelo scroll
 		}
 	};
 
@@ -270,33 +355,81 @@ export default function Scene({ envelope = {}, card = {} }: SceneProps) {
 	const envelopeHeight = envelope.height ?? 620;
 	const contentPadding = envelope.contentPadding ?? 16;
 
-	// Dimensões do card (baseadas no slot interno do envelope)
-	const cardWidth = card.width ?? envelopeWidth - contentPadding * 2;
-	const cardHeight = card.height ?? envelopeHeight - contentPadding * 2 - 16;
+	// Dimensões do card (baseadas no slot interno do envelope) - sempre números
+	const cardWidth =
+		typeof card.width === "number"
+			? card.width
+			: envelopeWidth - contentPadding * 2;
+	const cardHeight =
+		typeof card.height === "number"
+			? card.height
+			: envelopeHeight - contentPadding * 2 - 16;
+
+	const isCardExtracted = state === "extracted" || state === "cardOpen";
 
 	return (
-		<div className="min-h-screen flex items-center justify-center overflow-hidden">
-			{/* Envelope com Card dentro */}
-			<div className="envelope-container" style={{ zIndex: 10 }}>
-				<Envelope ref={envelopeRef} {...envelope} onClick={handleClick}>
-					<Card ref={cardRef} {...card} />
-				</Envelope>
+		<div
+			className="scroll-container"
+			style={{
+				// Altura extra para permitir scroll quando o card está extraído
+				minHeight: isCardExtracted ? "300vh" : "100vh",
+			}}
+		>
+			{/* Container fixo para o conteúdo visual */}
+			<div className="fixed inset-0 flex items-center justify-center">
+				{/* Envelope com Card dentro */}
+				<div
+					ref={envelopeContainerRef}
+					className="envelope-container"
+					style={{ zIndex: 10 }}
+				>
+					<Envelope ref={envelopeRef} {...envelope} onClick={handleClick}>
+						<Card ref={cardRef} {...card} />
+					</Envelope>
+				</div>
+
+				{/* Card extraído que abre em abas (começa invisível, posição absoluta no centro) */}
+				<div
+					ref={openableCardContainerRef}
+					className="absolute"
+					style={{
+						opacity: 0,
+						zIndex: -1,
+						pointerEvents: "none",
+					}}
+				>
+					<OpenableCard
+						ref={openableCardRef}
+						width={cardWidth}
+						height={cardHeight}
+						coverColor={card.backgroundColor}
+						coverImage={card.backgroundImage}
+						{...openableCard}
+					/>
+				</div>
 			</div>
 
-			{/* Card extraído (independente, começa invisível) */}
-			<div
-				ref={extractedCardRef}
-				className="absolute pointer-events-none"
-				style={{
-					opacity: 0,
-					zIndex: 50,
-					pointerEvents: state === "extracted" ? "auto" : "none",
-					cursor: state === "extracted" ? "pointer" : "default",
-				}}
-				onClick={state === "extracted" ? handleClick : undefined}
-			>
-				<Card {...card} width={cardWidth} height={cardHeight} />
-			</div>
+			{/* Indicador de scroll (aparece quando o card está extraído) */}
+			{isCardExtracted && state !== "cardOpen" && (
+				<div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-bounce">
+					<div className="text-white/70 text-sm flex flex-col items-center gap-2">
+						<span>Role para abrir</span>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="24"
+							height="24"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							strokeWidth="2"
+							strokeLinecap="round"
+							strokeLinejoin="round"
+						>
+							<path d="M12 5v14M19 12l-7 7-7-7" />
+						</svg>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }
