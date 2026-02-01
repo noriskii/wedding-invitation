@@ -7,6 +7,7 @@ import OpenableCard, {
 	type OpenableCardRef,
 	type OpenableCardProps,
 } from "./OpenableCard";
+import InviteContent from "./InviteContent";
 
 // Registrar o plugin ScrollTrigger
 gsap.registerPlugin(ScrollTrigger);
@@ -391,7 +392,7 @@ export default function Scene({
 				{/* Card extraído que abre em abas (começa invisível, posição absoluta no centro) */}
 				<div
 					ref={openableCardContainerRef}
-					className="absolute"
+					className="absolute "
 					style={{
 						opacity: 0,
 						zIndex: -1,
@@ -404,8 +405,17 @@ export default function Scene({
 						height={cardHeight}
 						coverColor={card.backgroundColor}
 						coverImage={card.backgroundImage}
+						leftFlapImage="/images/aba-esquerda.png"
+						rightFlapImage="/images/aba-direita.png"
+						innerTopImage="/images/cima.png"
+						innerTopHeight={67}
+						innerBottomImage="/images/baixo.png"
+						innerBottomHeight={67}
+						innerColor="#ffffff"
 						{...openableCard}
-					/>
+					>
+						<InviteContent />
+					</OpenableCard>
 				</div>
 			</div>
 

@@ -9,7 +9,7 @@ interface Props {
 const {
 	title = "Invitation",
 	primaryColor = "#84BC9C",
-	secondaryColor = "#2A4235",
+	secondaryColor = "#84BC9C",
 	accentColor = "#FFFDF7",
 } = Astro.props;
 ---
@@ -21,6 +21,13 @@ const {
 		<meta name='viewport' content='width=device-width, initial-scale=1.0' />
 		<meta name='generator' content={Astro.generator} />
 		<link rel='stylesheet' href='/src/styles/global.css' />
+		<!-- Google Fonts - Cinzel -->
+		<link rel='preconnect' href='https://fonts.googleapis.com' />
+		<link rel='preconnect' href='https://fonts.gstatic.com' crossorigin />
+		<link
+			href='https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&display=swap'
+			rel='stylesheet'
+		/>
 		<title>{title}</title>
 		<style define:vars={{ primaryColor, secondaryColor, accentColor }}>
 			.gradient-1 {
@@ -60,6 +67,15 @@ const {
 			}
 		</style>
 		<style is:global>
+			/* Fonte Snell Roundhand local */
+			@font-face {
+				font-family: "Snell Roundhand";
+				src: url("/fonts/SnellBT-Regular.otf") format("opentype");
+				font-weight: normal;
+				font-style: normal;
+				font-display: swap;
+			}
+
 			@keyframes fall {
 				0% {
 					transform: translateY(-10px) rotate(0deg);
