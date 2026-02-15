@@ -7,7 +7,7 @@ interface Props {
 }
 
 const {
-	title = "Invitation",
+	title = "Convite Virtual Jéssica e Lucas",
 	primaryColor = "#84BC9C",
 	secondaryColor = "#84BC9C",
 	accentColor = "#FFFDF7",
@@ -20,6 +20,7 @@ const {
 		<meta charset='UTF-8' />
 		<meta name='viewport' content='width=device-width, initial-scale=1.0' />
 		<meta name='generator' content={Astro.generator} />
+		<link rel='icon' type='image/png' href='/images/flor.png' />
 		<link rel='stylesheet' href='/src/styles/global.css' />
 		<!-- Google Fonts - Cinzel -->
 		<link rel='preconnect' href='https://fonts.googleapis.com' />
@@ -90,6 +91,42 @@ const {
 					opacity: 0.4;
 				}
 				100% {
+					opacity: 1;
+				}
+			}
+
+			/* Animações dos guias de interação */
+			@keyframes guideFadeIn {
+				0% {
+					opacity: 0;
+					transform: translate(-50%, 10px);
+				}
+				100% {
+					opacity: 1;
+					transform: translate(-50%, 0);
+				}
+			}
+
+			@keyframes guidePulse {
+				0%, 100% {
+					opacity: 1;
+				}
+				50% {
+					opacity: 0.5;
+				}
+			}
+
+			@keyframes scrollArrows {
+				0% {
+					transform: translateY(0);
+					opacity: 1;
+				}
+				50% {
+					transform: translateY(6px);
+					opacity: 0.5;
+				}
+				100% {
+					transform: translateY(0);
 					opacity: 1;
 				}
 			}

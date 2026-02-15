@@ -17,7 +17,7 @@ const ANIMATION_CONFIG = {
 	open: {
 		flap: {
 			rotateX: 180,
-			duration: 1.5,
+			duration: 0.7,
 			ease: "power2.inOut",
 		},
 		card: {
@@ -90,9 +90,61 @@ export default function Scene({
 	const cardRef = useRef<HTMLDivElement>(null); // Card dentro do envelope
 	const openableCardContainerRef = useRef<HTMLDivElement>(null); // Container do OpenableCard
 	const openableCardRef = useRef<OpenableCardRef>(null); // Card que abre em abas
+	const scrollGuideRef = useRef<HTMLDivElement>(null); // Ref para o guia de scroll
 	const [state, setState] = useState<
 		"closed" | "open" | "extracted" | "cardOpen"
 	>("closed");
+	const [showClickGuide, setShowClickGuide] = useState(false);
+	const [viewportScale, setViewportScale] = useState(1);
+
+	// Dimensões padrão do envelope para posicionar o card
+	const envelopeWidth = envelope.width ?? 480;
+	const envelopeHeight = envelope.height ?? 620;
+	const contentPadding = envelope.contentPadding ?? 16;
+
+	// Dimensões do card (baseadas no slot interno do envelope) - sempre números
+	const cardWidth =
+		typeof card.width === "number"
+			? card.width
+			: envelopeWidth - contentPadding * 2;
+	const cardHeight =
+		typeof card.height === "number"
+			? card.height
+			: envelopeHeight - contentPadding * 2 - 16;
+
+	// Escalonamento responsivo baseado no viewport
+	useEffect(() => {
+		const updateScale = () => {
+			const vw = window.innerWidth;
+			const vh = window.innerHeight;
+			const scaleX = (vw - 32) / envelopeWidth; // 16px padding cada lado
+			const scaleY = (vh - 100) / envelopeHeight; // espaço para guia abaixo
+			setViewportScale(Math.min(1, scaleX, scaleY));
+		};
+		updateScale();
+		window.addEventListener("resize", updateScale);
+		return () => window.removeEventListener("resize", updateScale);
+	}, [envelopeWidth, envelopeHeight]);
+
+	// Mostrar o guia de clique após a animação de intro (estado closed)
+	useEffect(() => {
+		if (state === "closed") {
+			const timer = setTimeout(() => setShowClickGuide(true), 500);
+			return () => clearTimeout(timer);
+		}
+	}, []);
+
+	// Mostrar o guia de clique quando muda para "open"
+	useEffect(() => {
+		if (state === "open") {
+			setShowClickGuide(false);
+			const timer = setTimeout(() => setShowClickGuide(true), 300);
+			return () => clearTimeout(timer);
+		}
+		if (state === "extracted" || state === "cardOpen") {
+			setShowClickGuide(false);
+		}
+	}, [state]);
 
 	const openEnvelope = () => {
 		const envelope = envelopeRef.current;
@@ -150,7 +202,7 @@ export default function Scene({
 			tl.to(openableCardContainer, {
 				opacity: 0,
 				y: -75,
-				scale: 1,
+				scale: viewportScale,
 				duration: 0.3,
 				ease: "power2.in",
 			});
@@ -255,12 +307,12 @@ export default function Scene({
 			openableCardContainer,
 			{
 				opacity: 0,
-				scale: 1,
+				scale: viewportScale,
 				y: -75,
 			},
 			{
 				opacity: 1,
-				scale: cardAnim.scale,
+				scale: cardAnim.scale * viewportScale,
 				y: cardAnim.y,
 				duration: cardAnim.duration,
 				ease: cardAnim.ease,
@@ -276,6 +328,7 @@ export default function Scene({
 		if (state !== "extracted") return;
 
 		const openableCardEl = openableCardRef.current;
+		const scrollGuideEl = scrollGuideRef.current;
 		const scrollContainer = document.querySelector(".scroll-container");
 		if (!openableCardEl?.leftFlap || !openableCardEl?.rightFlap || !scrollContainer)
 			return;
@@ -313,6 +366,26 @@ export default function Scene({
 			0
 		);
 
+		// Animação de entrada do guia de scroll (GSAP, sem CSS animation)
+		if (scrollGuideEl) {
+			gsap.fromTo(
+				scrollGuideEl,
+				{ opacity: 0, y: 10 },
+				{ opacity: 1, y: 0, duration: 0.6, ease: "power2.out", delay: 0.2 }
+			);
+
+			// Fade out do guia de scroll conforme o usuário rola
+			gsap.to(scrollGuideEl, {
+				opacity: 0,
+				scrollTrigger: {
+					trigger: scrollContainer,
+					start: "top top",
+					end: "25% top",
+					scrub: true,
+				},
+			});
+		}
+
 		// Cleanup
 		return () => {
 			ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
@@ -320,6 +393,7 @@ export default function Scene({
 	}, [state]);
 
 	const handleClick = () => {
+		setShowClickGuide(false);
 		switch (state) {
 			case "closed":
 				openEnvelope();
@@ -351,21 +425,6 @@ export default function Scene({
 		return tl;
 	};
 
-	// Dimensões padrão do envelope para posicionar o card
-	const envelopeWidth = envelope.width ?? 480;
-	const envelopeHeight = envelope.height ?? 620;
-	const contentPadding = envelope.contentPadding ?? 16;
-
-	// Dimensões do card (baseadas no slot interno do envelope) - sempre números
-	const cardWidth =
-		typeof card.width === "number"
-			? card.width
-			: envelopeWidth - contentPadding * 2;
-	const cardHeight =
-		typeof card.height === "number"
-			? card.height
-			: envelopeHeight - contentPadding * 2 - 16;
-
 	const isCardExtracted = state === "extracted" || state === "cardOpen";
 
 	return (
@@ -378,21 +437,56 @@ export default function Scene({
 		>
 			{/* Container fixo para o conteúdo visual */}
 			<div className="fixed inset-0 flex items-center justify-center">
-				{/* Envelope com Card dentro */}
+				{/* Wrapper com escalonamento responsivo */}
 				<div
-					ref={envelopeContainerRef}
-					className="envelope-container"
-					style={{ zIndex: 10 }}
+					className="relative"
+					style={{ transform: `scale(${viewportScale})` }}
 				>
-					<Envelope ref={envelopeRef} {...envelope} onClick={handleClick}>
-						<Card ref={cardRef} {...card} />
-					</Envelope>
-				</div>
+					{/* Envelope com Card dentro */}
+					<div
+						ref={envelopeContainerRef}
+						className="envelope-container"
+						style={{ zIndex: 10 }}
+					>
+						<Envelope ref={envelopeRef} {...envelope} onClick={handleClick}>
+							<Card ref={cardRef} {...card} />
+						</Envelope>
+					</div>
+
+					{/* Guia "Clique para abrir" - centralizado abaixo do envelope */}
+					{showClickGuide && (state === "closed" || state === "open") && (
+						<div
+							className="absolute z-50 pointer-events-none animate-pulse"
+							style={{
+								top: "100%",
+								left: "50%",
+								transform: "translateX(-50%)",
+								marginTop: "20px",
+							}}
+						>
+							<span
+								style={{
+									color: "#84BC9C",
+									textShadow: "0 1px 8px rgba(0,0,0,0.3)",
+									fontFamily: "'Cinzel', serif",
+									fontSize: "14px",
+									fontWeight: 500,
+									letterSpacing: "2px",
+									textTransform: "uppercase",
+									whiteSpace: "nowrap",
+								}}
+							>
+								Clique para abrir
+							</span>
+						</div>
+					)}
+
+					</div>
 
 				{/* Card extraído que abre em abas (começa invisível, posição absoluta no centro) */}
 				<div
 					ref={openableCardContainerRef}
-					className="absolute "
+					className="absolute"
 					style={{
 						opacity: 0,
 						zIndex: -1,
@@ -419,24 +513,78 @@ export default function Scene({
 				</div>
 			</div>
 
-			{/* Indicador de scroll (aparece quando o card está extraído) */}
-			{isCardExtracted && state !== "cardOpen" && (
-				<div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-bounce">
-					<div className="text-white/70 text-sm flex flex-col items-center gap-2">
-						<span>Role para abrir</span>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="24"
-							height="24"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							strokeWidth="2"
-							strokeLinecap="round"
-							strokeLinejoin="round"
+			{/* Guia "Role a página" com setas (estado extracted) - usa GSAP para controle total */}
+			{isCardExtracted && (
+				<div
+					ref={scrollGuideRef}
+					className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 pointer-events-none"
+					style={{ opacity: 0 }}
+				>
+					<div
+						className="flex flex-col items-center gap-1"
+						style={{
+							color: "#84BC9C",
+							textShadow: "0 1px 8px rgba(0,0,0,0.3)",
+						}}
+					>
+						<span
+							style={{
+								fontFamily: "'Cinzel', serif",
+								fontSize: "14px",
+								fontWeight: 500,
+								letterSpacing: "2px",
+								textTransform: "uppercase",
+							}}
 						>
-							<path d="M12 5v14M19 12l-7 7-7-7" />
-						</svg>
+							Role a página
+						</span>
+						<div
+							className="flex flex-col items-center"
+							style={{ animation: "scrollArrows 1.5s ease-in-out infinite" }}
+						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="22"
+								height="22"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="2"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								style={{ opacity: 0.6, marginBottom: "-6px" }}
+							>
+								<path d="M7 10l5 5 5-5" />
+							</svg>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="22"
+								height="22"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="2"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								style={{ opacity: 0.8, marginBottom: "-6px" }}
+							>
+								<path d="M7 10l5 5 5-5" />
+							</svg>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="22"
+								height="22"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="2"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								style={{ opacity: 1 }}
+							>
+								<path d="M7 10l5 5 5-5" />
+							</svg>
+						</div>
 					</div>
 				</div>
 			)}

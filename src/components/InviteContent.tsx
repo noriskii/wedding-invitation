@@ -1,5 +1,12 @@
+import { useState, useEffect } from "react";
+
 export default function InviteContent() {
 	const textColor = "#2A4235";
+	const [isMobile, setIsMobile] = useState(false);
+
+	useEffect(() => {
+		setIsMobile(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
+	}, []);
 
 	return (
 		<div
@@ -32,8 +39,8 @@ export default function InviteContent() {
 					Andreia da Costa
 				</div>
 				<div className="flex flex-col pr-4">
-					<span>Simone</span>
-					<span>Renato</span>
+					<span>Simone Rosa da Silva</span>
+					<span>Renato Pereira da Silva</span>
 				</div>
 			</div>
 
@@ -57,12 +64,27 @@ export default function InviteContent() {
 			<h2 className="text-sm font-semibold mb-1">
 				CASA GIARDINO
 			</h2>
-			<p className="text-[0.7rem] mb-1">
-				Av. Prefeito Francisco Ribeiro Nogueira, 3860
-			</p>
-			<p className="text-[0.7rem] mb-3">
-				Mogi das Cruzes, SP
-			</p>
+			<a
+				href={
+					isMobile
+						? "https://waze.com/ul?q=Casa+Giardino,+Av.+Prefeito+Francisco+Ribeiro+Nogueira,+3790,+Mogi+das+Cruzes,+SP&navigate=yes"
+						: "https://www.google.com/maps/search/?api=1&query=Casa+Giardino+Av.+Prefeito+Francisco+Ribeiro+Nogueira+3790+Mogi+das+Cruzes+SP"
+				}
+				target={isMobile ? undefined : "_blank"}
+				rel="noopener noreferrer"
+				style={{
+					textDecoration: "underline",
+					textDecorationColor: "rgba(42, 66, 53, 0.3)",
+					textUnderlineOffset: "3px",
+				}}
+			>
+				<p className="text-[0.7rem] mb-1">
+					Av. Prefeito Francisco Ribeiro Nogueira, 3790
+				</p>
+				<p className="text-[0.7rem] mb-3">
+					Mogi das Cruzes, SP
+				</p>
+			</a>
 
 			{/* Site */}
 			<a

@@ -24,7 +24,7 @@ const Envelope = forwardRef<EnvelopeRef, EnvelopeProps>(
 			height = 620,
 			bodyColor = "#2A4235",
 			flapColor = "#2A4235",
-			innerColor = "#101914",
+			innerColor = "#203228",
 			contentPadding = 16,
 			onClick,
 			children,
@@ -65,7 +65,7 @@ const Envelope = forwardRef<EnvelopeRef, EnvelopeProps>(
 				>
 					{/* Parte interna do envelope */}
 					<div
-						className="absolute inset-0"
+						className="absolute inset-0 border-t"
 						style={{ backgroundColor: innerColor }}
 					/>
 
@@ -85,17 +85,17 @@ const Envelope = forwardRef<EnvelopeRef, EnvelopeProps>(
 
 					{/* Corpo do envelope (parte frontal) */}
 					<div
-						className="absolute z-10 bottom-0 left-0 right-0 rounded-b-md border-t"
+						className="absolute z-10 bottom-0 left-0 right-0 rounded-b-md "
 						style={{
 							height: `${height * 0.6}px`,
 							backgroundColor: bodyColor,
 						}}
 					/>
-					<div className="absolute bottom-20 left-0 w-16 h-4 rounded-t-lg border" style={{
+					<div className="absolute bottom-20 left-0 w-16 h-4 rounded-t-lg " style={{
 						height: `${height * 0.6}px`,
 						backgroundColor: bodyColor,
 					}}></div>
-					<div className="absolute bottom-20 right-0 w-16 h-4 rounded-t-lg border" style={{
+					<div className="absolute bottom-20 right-0 w-16 h-4 rounded-t-lg " style={{
 						height: `${height * 0.6}px`,
 						backgroundColor: bodyColor,
 					}}></div>
