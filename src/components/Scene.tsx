@@ -126,58 +126,91 @@ export default function Scene({
 		return () => window.removeEventListener("resize", updateScale);
 	}, [envelopeWidth, envelopeHeight]);
 
-	// Mostrar o guia de clique após a animação de intro (estado closed)
+	// Mostrar o guia de clique imediatamente
 	useEffect(() => {
-		if (state === "closed") {
-			const timer = setTimeout(() => setShowClickGuide(true), 500);
-			return () => clearTimeout(timer);
-		}
+		setShowClickGuide(true);
 	}, []);
 
-	// Mostrar o guia de clique quando muda para "open"
+	// Esconder o guia quando sair do estado closed
 	useEffect(() => {
-		if (state === "open") {
-			setShowClickGuide(false);
-			const timer = setTimeout(() => setShowClickGuide(true), 300);
-			return () => clearTimeout(timer);
-		}
-		if (state === "extracted" || state === "cardOpen") {
+		if (state !== "closed") {
 			setShowClickGuide(false);
 		}
 	}, [state]);
 
-	const openEnvelope = () => {
-		const envelope = envelopeRef.current;
+	const openAndExtract = () => {
+		const envelopeEl = envelopeRef.current;
 		const cardEl = cardRef.current;
-		if (state !== "closed" || !envelope?.flap || !cardEl) return;
+		const envelopeContainer = envelopeContainerRef.current;
+		const openableCardContainer = openableCardContainerRef.current;
+		if (state !== "closed" || !envelopeEl?.flap || !cardEl || !envelopeContainer || !openableCardContainer) return;
 
 		const tl = gsap.timeline({
-			onComplete: () => setState("open"),
+			onComplete: () => setState("extracted"),
 		});
 
-		const { flap, card: cardAnim } = ANIMATION_CONFIG.open;
+		const { flap, card: openCardAnim } = ANIMATION_CONFIG.open;
+		const { card: extractCardAnim, envelope: envAnim } = ANIMATION_CONFIG.extract;
 
-		// Abre a aba
-		tl.to(envelope.flap, {
+		// 1. Abre a aba do envelope
+		tl.to(envelopeEl.flap, {
 			rotateX: flap.rotateX,
 			duration: flap.duration,
 			ease: flap.ease,
 		});
 
-		// Tira o z-index
-		tl.to(envelope.flap, {
-			zIndex: -10,
-		});
+		// 2. Tira o z-index da aba
+		tl.set(envelopeEl.flap, { zIndex: -10 });
 
-		// Levanta o card um pouco
+		// 3. Card sobe continuamente: peek e extração em sequência sem pausa
 		tl.to(
 			cardEl,
 			{
-				y: cardAnim.y,
-				duration: cardAnim.duration,
-				ease: cardAnim.ease,
+				y: openCardAnim.y,
+				duration: openCardAnim.duration,
+				ease: openCardAnim.ease,
 			},
-			cardAnim.offset
+			openCardAnim.offset
+		);
+
+		// 4. Card continua subindo e some (sem pausa)
+		tl.to(cardEl, {
+			y: -200,
+			opacity: 0,
+			duration: 0.4,
+			ease: "power2.in",
+		});
+
+		// 6. Envelope some (paralelo com o card)
+		tl.to(
+			envelopeContainer,
+			{
+				opacity: envAnim.opacity,
+				scale: envAnim.scale,
+				y: envAnim.y,
+				duration: envAnim.duration,
+				ease: envAnim.ease,
+			},
+			"<"
+		);
+
+		// 7. OpenableCard aparece
+		tl.set(openableCardContainer, {
+			zIndex: 50,
+			pointerEvents: "auto",
+		});
+
+		tl.fromTo(
+			openableCardContainer,
+			{ opacity: 0, scale: 1, y: -75 },
+			{
+				opacity: 1,
+				scale: extractCardAnim.scale,
+				y: extractCardAnim.y,
+				duration: extractCardAnim.duration,
+				ease: extractCardAnim.ease,
+			},
+			"-=0.2"
 		);
 
 		return tl;
@@ -256,73 +289,6 @@ export default function Scene({
 		return tl;
 	};
 
-	const extractCard = () => {
-		const envelope = envelopeRef.current;
-		const cardEl = cardRef.current;
-		const envelopeContainer = envelopeContainerRef.current;
-		const openableCardContainer = openableCardContainerRef.current;
-		if (
-			state !== "open" ||
-			!envelope?.container ||
-			!cardEl ||
-			!envelopeContainer ||
-			!openableCardContainer
-		)
-			return;
-
-		const tl = gsap.timeline({
-			onComplete: () => setState("extracted"),
-		});
-
-		const { card: cardAnim, envelope: envAnim } = ANIMATION_CONFIG.extract;
-
-		// Card original sobe mais e some junto com o envelope
-		tl.to(cardEl, {
-			y: -200,
-			opacity: 0,
-			duration: 0.4,
-			ease: "power2.in",
-		});
-
-		// Envelope container some
-		tl.to(
-			envelopeContainer,
-			{
-				opacity: envAnim.opacity,
-				scale: envAnim.scale,
-				y: envAnim.y,
-				duration: envAnim.duration,
-				ease: envAnim.ease,
-			},
-			0
-		);
-
-		// OpenableCard aparece
-		tl.set(openableCardContainer, {
-			zIndex: 50,
-			pointerEvents: "auto",
-		});
-
-		tl.fromTo(
-			openableCardContainer,
-			{
-				opacity: 0,
-				scale: viewportScale,
-				y: -75,
-			},
-			{
-				opacity: 1,
-				scale: cardAnim.scale * viewportScale,
-				y: cardAnim.y,
-				duration: cardAnim.duration,
-				ease: cardAnim.ease,
-			},
-			0.2
-		);
-
-		return tl;
-	};
-
 	// Configurar parallax para abertura do card quando extraído
 	useEffect(() => {
 		if (state !== "extracted") return;
@@ -371,7 +337,7 @@ export default function Scene({
 			gsap.fromTo(
 				scrollGuideEl,
 				{ opacity: 0, y: 10 },
-				{ opacity: 1, y: 0, duration: 0.6, ease: "power2.out", delay: 0.2 }
+				{ opacity: 1, y: 0, duration: 0.4, ease: "power2.out", delay: 0 }
 			);
 
 			// Fade out do guia de scroll conforme o usuário rola
@@ -393,15 +359,9 @@ export default function Scene({
 	}, [state]);
 
 	const handleClick = () => {
-		setShowClickGuide(false);
-		switch (state) {
-			case "closed":
-				openEnvelope();
-				break;
-			case "open":
-				extractCard();
-				break;
-			// Não há mais click para abrir/fechar o card - é controlado pelo scroll
+		if (state === "closed") {
+			setShowClickGuide(false);
+			openAndExtract();
 		}
 	};
 
@@ -466,7 +426,7 @@ export default function Scene({
 						>
 							<span
 								style={{
-									color: "#84BC9C",
+									color: "#2D6A4F",
 									textShadow: "0 1px 8px rgba(0,0,0,0.3)",
 									fontFamily: "'Cinzel', serif",
 									fontSize: "14px",
@@ -523,7 +483,7 @@ export default function Scene({
 					<div
 						className="flex flex-col items-center gap-1"
 						style={{
-							color: "#84BC9C",
+							color: "#2D6A4F",
 							textShadow: "0 1px 8px rgba(0,0,0,0.3)",
 						}}
 					>
