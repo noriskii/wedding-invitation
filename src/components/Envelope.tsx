@@ -61,12 +61,15 @@ const Envelope = forwardRef<EnvelopeRef, EnvelopeProps>(
 					style={{
 						width: `${width}px`,
 						height: `${height}px`,
+						boxShadow: "0 24px 64px rgba(0,0,0,0.45), 0 8px 24px rgba(0,0,0,0.28)",
 					}}
 				>
 					{/* Parte interna do envelope */}
 					<div
 						className="absolute inset-0 border-t"
-						style={{ backgroundColor: innerColor }}
+						style={{
+							background: `linear-gradient(160deg, ${innerColor} 0%, #1a2b22 100%)`,
+						}}
 					/>
 
 					{/* Slot do conteúdo (Card vai aqui) */}
@@ -85,19 +88,19 @@ const Envelope = forwardRef<EnvelopeRef, EnvelopeProps>(
 
 					{/* Corpo do envelope (parte frontal) */}
 					<div
-						className="absolute z-10 bottom-0 left-0 right-0 rounded-b-md "
+						className="absolute z-10 bottom-0 left-0 right-0 rounded-b-md"
 						style={{
 							height: `${height * 0.6}px`,
-							backgroundColor: bodyColor,
+							background: `linear-gradient(170deg, #324f3e 0%, ${bodyColor} 45%, #1e3028 100%)`,
 						}}
 					/>
-					<div className="absolute bottom-20 left-0 w-16 h-4 rounded-t-lg " style={{
+					<div className="absolute bottom-20 left-0 w-16 h-4 rounded-t-lg" style={{
 						height: `${height * 0.6}px`,
-						backgroundColor: bodyColor,
+						background: `linear-gradient(100deg, #2f4b3a 0%, ${bodyColor} 60%, #1c2e24 100%)`,
 					}}></div>
-					<div className="absolute bottom-20 right-0 w-16 h-4 rounded-t-lg " style={{
+					<div className="absolute bottom-20 right-0 w-16 h-4 rounded-t-lg" style={{
 						height: `${height * 0.6}px`,
-						backgroundColor: bodyColor,
+						background: `linear-gradient(260deg, #1e3028 0%, ${bodyColor} 60%, #2f4b3a 100%)`,
 					}}></div>
 
 
@@ -109,7 +112,7 @@ const Envelope = forwardRef<EnvelopeRef, EnvelopeProps>(
 							width: `${width}px`,
 							height: `${flapSize}px`,
 							// marginLeft: `-${flapSize / 2}px`,
-							backgroundColor: flapColor,
+							background: `linear-gradient(180deg, #2f4d3c 0%, ${flapColor} 50%, #1f3229 100%)`,
 							transformOrigin: "top center",
 							transform: "rotateX(0deg)",
 						}}
