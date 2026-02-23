@@ -97,12 +97,12 @@ export default function Scene({
 	const [showClickGuide, setShowClickGuide] = useState(false);
 	const [viewportScale, setViewportScale] = useState(1);
 
-	// Dimensões padrão do envelope para posicionar o card
+	// Dimensões base do envelope
 	const envelopeWidth = envelope.width ?? 480;
 	const envelopeHeight = envelope.height ?? 620;
 	const contentPadding = envelope.contentPadding ?? 16;
 
-	// Dimensões do card (baseadas no slot interno do envelope) - sempre números
+	// Dimensões do card (baseadas no slot interno do envelope)
 	const cardWidth =
 		typeof card.width === "number"
 			? card.width
@@ -111,6 +111,13 @@ export default function Scene({
 		typeof card.height === "number"
 			? card.height
 			: envelopeHeight - contentPadding * 2 - 16;
+
+	// Dimensões escaladas — passadas diretamente aos componentes (sem wrapper CSS)
+	const scaledEnvelopeWidth  = Math.round(envelopeWidth  * viewportScale);
+	const scaledEnvelopeHeight = Math.round(envelopeHeight * viewportScale);
+	const scaledContentPadding = Math.round(contentPadding * viewportScale);
+	const scaledCardWidth      = Math.round(cardWidth      * viewportScale);
+	const scaledCardHeight     = Math.round(cardHeight     * viewportScale);
 
 	// Escalonamento responsivo baseado no viewport
 	useEffect(() => {
@@ -166,7 +173,7 @@ export default function Scene({
 		tl.to(
 			cardEl,
 			{
-				y: openCardAnim.y,
+				y: openCardAnim.y * viewportScale,
 				duration: openCardAnim.duration,
 				ease: openCardAnim.ease,
 			},
@@ -175,7 +182,7 @@ export default function Scene({
 
 		// 4. Card continua subindo e some (sem pausa)
 		tl.to(cardEl, {
-			y: -200,
+			y: -200 * viewportScale,
 			opacity: 0,
 			duration: 0.4,
 			ease: "power2.in",
@@ -187,7 +194,7 @@ export default function Scene({
 			{
 				opacity: envAnim.opacity,
 				scale: envAnim.scale,
-				y: envAnim.y,
+				y: envAnim.y * viewportScale,
 				duration: envAnim.duration,
 				ease: envAnim.ease,
 			},
@@ -202,10 +209,10 @@ export default function Scene({
 
 		tl.fromTo(
 			openableCardContainer,
-			{ opacity: 0, scale: 1, y: -75 },
+			{ opacity: 0, scale: viewportScale, y: -75 * viewportScale },
 			{
 				opacity: 1,
-				scale: extractCardAnim.scale,
+				scale: extractCardAnim.scale * viewportScale,
 				y: extractCardAnim.y,
 				duration: extractCardAnim.duration,
 				ease: extractCardAnim.ease,
@@ -397,19 +404,23 @@ export default function Scene({
 		>
 			{/* Container fixo para o conteúdo visual */}
 			<div className="fixed inset-0 flex items-center justify-center">
-				{/* Wrapper com escalonamento responsivo */}
-				<div
-					className="relative"
-					style={{ transform: `scale(${viewportScale})` }}
-				>
+				{/* Wrapper sem transformações CSS para não interferir com 3D */}
+				<div className="relative">
 					{/* Envelope com Card dentro */}
 					<div
 						ref={envelopeContainerRef}
 						className="envelope-container"
 						style={{ zIndex: 10 }}
 					>
-						<Envelope ref={envelopeRef} {...envelope} onClick={handleClick}>
-							<Card ref={cardRef} {...card} />
+						<Envelope
+							ref={envelopeRef}
+							{...envelope}
+							width={scaledEnvelopeWidth}
+							height={scaledEnvelopeHeight}
+							contentPadding={scaledContentPadding}
+							onClick={handleClick}
+						>
+							<Card ref={cardRef} {...card} width={scaledCardWidth} height={scaledCardHeight} />
 						</Envelope>
 					</div>
 

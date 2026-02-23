@@ -48,6 +48,7 @@ const Envelope = forwardRef<EnvelopeRef, EnvelopeProps>(
 		}));
 
 		const flapSize = width * 0.7;
+		const sealSize = Math.round(90 * (width / 480));
 
 		return (
 			<div
@@ -123,9 +124,9 @@ const Envelope = forwardRef<EnvelopeRef, EnvelopeProps>(
 							alt="Selo do envelope"
 							className="absolute left-1/2 -translate-x-1/2 z-10"
 							style={{
-								bottom: `-${flapSize * 0.125}px`, // Adjust vertical position to be on the edge
-								width: '90px',
-								height: '90px',
+								bottom: `-${sealSize / 2}px`,
+								width: `${sealSize}px`,
+								height: `${sealSize}px`,
 							}}
 						/>
 					</div>
