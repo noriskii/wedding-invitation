@@ -17,14 +17,14 @@ const ANIMATION_CONFIG = {
 	open: {
 		flap: {
 			rotateX: 180,
-			duration: 0.7,
+			duration: 1,
 			ease: "power2.inOut",
 		},
 		card: {
 			y: -75,
 			duration: 0.4,
 			ease: "power2.out",
-			offset: "-=0.2",
+			offset: "+=0.5",
 		},
 	},
 	close: {
@@ -113,11 +113,11 @@ export default function Scene({
 			: envelopeHeight - contentPadding * 2 - 16;
 
 	// Dimensões escaladas — passadas diretamente aos componentes (sem wrapper CSS)
-	const scaledEnvelopeWidth  = Math.round(envelopeWidth  * viewportScale);
+	const scaledEnvelopeWidth = Math.round(envelopeWidth * viewportScale);
 	const scaledEnvelopeHeight = Math.round(envelopeHeight * viewportScale);
 	const scaledContentPadding = Math.round(contentPadding * viewportScale);
-	const scaledCardWidth      = Math.round(cardWidth      * viewportScale);
-	const scaledCardHeight     = Math.round(cardHeight     * viewportScale);
+	const scaledCardWidth = Math.round(cardWidth * viewportScale);
+	const scaledCardHeight = Math.round(cardHeight * viewportScale);
 
 	// Escalonamento responsivo baseado no viewport
 	useEffect(() => {
@@ -452,7 +452,7 @@ export default function Scene({
 						</div>
 					)}
 
-					</div>
+				</div>
 
 				{/* Card extraído que abre em abas (começa invisível, posição absoluta no centro) */}
 				<div
