@@ -1,5 +1,6 @@
 ---
-import '../styles/global.css';
+import "../styles/global.css";
+import Analytics from "@vercel/analytics/astro";
 
 interface Props {
 	title?: string;
@@ -109,7 +110,8 @@ const {
 			}
 
 			@keyframes guidePulse {
-				0%, 100% {
+				0%,
+				100% {
 					opacity: 1;
 				}
 				50% {
