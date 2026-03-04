@@ -15,7 +15,7 @@ export default function InviteContent() {
 		>
 			{/* Aquarela decorativa */}
 			<img
-				src="/images/aquarela.png"
+				src="/images/aquarela.webp"
 				alt=""
 				className="w-32 mb-2"
 			/>

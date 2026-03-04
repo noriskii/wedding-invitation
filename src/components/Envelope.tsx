@@ -120,7 +120,7 @@ const Envelope = forwardRef<EnvelopeRef, EnvelopeProps>(
 					>
 						{/* Selo */}
 						<img
-							src="/images/selo.png"
+							src="/images/selo.webp"
 							alt="Selo do envelope"
 							className="absolute left-1/2 -translate-x-1/2 z-10"
 							style={{

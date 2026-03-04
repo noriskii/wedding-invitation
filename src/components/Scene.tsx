@@ -470,11 +470,11 @@ export default function Scene({
 						height={cardHeight}
 						coverColor={card.backgroundColor}
 						coverImage={card.backgroundImage}
-						leftFlapImage="/images/aba-esquerda.png"
-						rightFlapImage="/images/aba-direita.png"
-						innerTopImage="/images/cima.png"
+						leftFlapImage="/images/aba-esquerda.webp"
+						rightFlapImage="/images/aba-direita.webp"
+						innerTopImage="/images/cima.webp"
 						innerTopHeight={67}
-						innerBottomImage="/images/baixo.png"
+						innerBottomImage="/images/baixo.webp"
 						innerBottomHeight={67}
 						innerColor="#ffffff"
 						{...openableCard}
